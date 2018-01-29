@@ -12,8 +12,6 @@ import cifar100_input as data_input
 import resnet
 import utils
 
-
-
 # Dataset Configuration
 tf.app.flags.DEFINE_string('data_dir', './cifar-100-binary', """Path to the CIFAR-100 binary data.""")
 tf.app.flags.DEFINE_integer('num_classes', 100, """Number of classes in the dataset.""")
@@ -64,7 +62,6 @@ def train():
     print('\tGPU memory fraction: %f' % FLAGS.gpu_fraction)
     print('\tLog device placement: %d' % FLAGS.log_device_placement)
 
-
     with tf.Graph().as_default():
         # The CIFAR-100 dataset
         with tf.variable_scope('test_image'):
@@ -98,7 +95,7 @@ def train():
 
         # Start running operations on the Graph.
         sess = tf.Session(config=tf.ConfigProto(
-            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_fraction),
+            gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_fraction),
             log_device_placement=FLAGS.log_device_placement))
         sess.run(init)
 
@@ -108,11 +105,11 @@ def train():
             ckpt = tf.train.get_checkpoint_state(FLAGS.ckpt_path)
             # Restores from checkpoint
             if ckpt and ckpt.model_checkpoint_path:
-               print('\tRestore from %s' % ckpt.model_checkpoint_path)
-               saver.restore(sess, ckpt.model_checkpoint_path)
+                print('\tRestore from %s' % ckpt.model_checkpoint_path)
+                saver.restore(sess, ckpt.model_checkpoint_path)
             else:
-               print('No checkpoint file found in the dir [%s]' % FLAGS.ckpt_path)
-               sys.exit(1)
+                print('No checkpoint file found in the dir [%s]' % FLAGS.ckpt_path)
+                sys.exit(1)
         elif os.path.isfile(FLAGS.ckpt_path):
             print('\tRestore from %s' % FLAGS.ckpt_path)
             saver.restore(sess, FLAGS.ckpt_path)
@@ -124,12 +121,13 @@ def train():
         tf.train.start_queue_runners(sess=sess)
 
         # Testing!
-        result_ll = [[0, 0] for _ in range(FLAGS.num_classes)] # Correct/wrong counts for each class
+        result_ll = [[0, 0] for _ in range(FLAGS.num_classes)]  # Correct/wrong counts for each class
         test_loss = 0.0, 0.0
         for i in range(FLAGS.test_iter):
             test_images_val, test_labels_val = sess.run([test_images, test_labels])
             preds_val, loss_value, acc_value = sess.run([network.preds, network.loss, network.acc],
-                        feed_dict={network.is_train:False, images:test_images_val, labels:test_labels_val})
+                                                        feed_dict={network.is_train: False, images: test_images_val,
+                                                                   labels: test_labels_val})
             test_loss += loss_value
             for j in range(FLAGS.batch_size):
                 correct = 0 if test_labels_val[j] == preds_val[j] else 1
@@ -137,9 +135,9 @@ def train():
         test_loss /= FLAGS.test_iter
 
         # Summary display & output
-        acc_list = [float(r[0])/float(r[0]+r[1]) for r in result_ll]
+        acc_list = [float(r[0]) / float(r[0] + r[1]) for r in result_ll]
         result_total = np.sum(np.array(result_ll), axis=0)
-        acc_total = float(result_total[0])/np.sum(result_total)
+        acc_total = float(result_total[0]) / np.sum(result_total)
 
         print 'Class    \t\t\tT\tF\tAcc.'
         format_str = '%-31s %7d %7d %.5f'
@@ -160,8 +158,8 @@ def train():
 
 
 def main(argv=None):  # pylint: disable=unused-argument
-  train()
+    train()
 
 
 if __name__ == '__main__':
-  tf.app.run()
+    tf.app.run()

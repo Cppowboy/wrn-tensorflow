@@ -11,8 +11,6 @@ import cifar100_input as data_input
 import resnet
 import utils
 
-
-
 # Dataset Configuration
 tf.app.flags.DEFINE_string('data_dir', './cifar-100-binary', """Path to the CIFAR-100 binary data.""")
 tf.app.flags.DEFINE_integer('num_classes', 100, """Number of classes in the dataset.""")
@@ -34,9 +32,9 @@ tf.app.flags.DEFINE_float('lr_decay', 0.1, """Learning rate decay factor""")
 # tf.app.flags.DEFINE_boolean('basenet_train', True, """Flag whether the model will train the base network""")
 # tf.app.flags.DEFINE_float('basenet_lr_ratio', 0.1, """Learning rate ratio of basenet to bypass net""")
 # tf.app.flags.DEFINE_boolean('finetune', False,
-                            # """Flag whether the L1 connection weights will be only made at
-                            # the position where the original bypass network has nonzero
-                            # L1 connection weights""")
+# """Flag whether the L1 connection weights will be only made at
+# the position where the original bypass network has nonzero
+# L1 connection weights""")
 # tf.app.flags.DEFINE_string('pretrained_dir', './pretrain', """Directory where to load pretrained model.(Only for --finetune True""")
 
 # Training Configuration
@@ -81,7 +79,6 @@ def train():
     print('\tGPU memory fraction: %f' % FLAGS.gpu_fraction)
     print('\tLog device placement: %d' % FLAGS.log_device_placement)
 
-
     with tf.Graph().as_default():
         init_step = 0
         global_step = tf.Variable(0, trainable=False, name='global_step')
@@ -112,33 +109,34 @@ def train():
         network.build_train_op()
 
         # Summaries(training)
-        train_summary_op = tf.merge_all_summaries()
+        train_summary_op = tf.summary.merge_all()
 
         # Build an initialization operation to run below.
-        init = tf.initialize_all_variables()
+        init = tf.global_variables_initializer()
 
         # Start running operations on the Graph.
         sess = tf.Session(config=tf.ConfigProto(
-            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_fraction),
+            gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=FLAGS.gpu_fraction),
             log_device_placement=FLAGS.log_device_placement))
         sess.run(init)
 
         # Create a saver.
-        saver = tf.train.Saver(tf.all_variables(), max_to_keep=10000)
+        saver = tf.train.Saver(tf.global_variables(), max_to_keep=10000)
         ckpt = tf.train.get_checkpoint_state(FLAGS.train_dir)
         if ckpt and ckpt.model_checkpoint_path:
-           print('\tRestore from %s' % ckpt.model_checkpoint_path)
-           # Restores from checkpoint
-           saver.restore(sess, ckpt.model_checkpoint_path)
-           init_step = int(ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1])
+            print('\tRestore from %s' % ckpt.model_checkpoint_path)
+            # Restores from checkpoint
+            saver.restore(sess, ckpt.model_checkpoint_path)
+            init_step = int(ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1])
         else:
-           print('No checkpoint file found. Start from the scratch.')
+            print('No checkpoint file found. Start from the scratch.')
 
         # Start queue runners & summary_writer
         tf.train.start_queue_runners(sess=sess)
         if not os.path.exists(FLAGS.train_dir):
             os.mkdir(FLAGS.train_dir)
-        summary_writer = tf.train.SummaryWriter(FLAGS.train_dir, sess.graph)
+        # summary_writer = tf.train.SummaryWriter(FLAGS.train_dir, sess.graph)
+        summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
 
         # Training!
         test_best_acc = 0.0
@@ -149,7 +147,8 @@ def train():
                 for i in range(FLAGS.test_iter):
                     test_images_val, test_labels_val = sess.run([test_images, test_labels])
                     loss_value, acc_value = sess.run([network.loss, network.acc],
-                                feed_dict={network.is_train:False, images:test_images_val, labels:test_labels_val})
+                                                     feed_dict={network.is_train: False, images: test_images_val,
+                                                                labels: test_labels_val})
                     test_loss += loss_value
                     test_acc += acc_value
                 test_loss /= FLAGS.test_iter
@@ -178,8 +177,8 @@ def train():
             start_time = time.time()
             train_images_val, train_labels_val = sess.run([train_images, train_labels])
             _, lr_value, loss_value, acc_value, train_summary_str = \
-                    sess.run([network.train_op, network.lr, network.loss, network.acc, train_summary_op],
-                        feed_dict={network.is_train:True, images:train_images_val, labels:train_labels_val})
+                sess.run([network.train_op, network.lr, network.loss, network.acc, train_summary_op],
+                         feed_dict={network.is_train: True, images: train_images_val, labels: train_labels_val})
             duration = time.time() - start_time
 
             assert not np.isnan(loss_value)
@@ -202,8 +201,8 @@ def train():
 
 
 def main(argv=None):  # pylint: disable=unused-argument
-  train()
+    train()
 
 
 if __name__ == '__main__':
-  tf.app.run()
+    tf.app.run()

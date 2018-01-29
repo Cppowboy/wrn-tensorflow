@@ -1,13 +1,13 @@
 #!/bin/sh
 export CUDA_VISIBLE_DEVICES=0
-train_dir="./wrn_28_1"
+train_dir="./wrn_40_2_hyper"
 
 python train.py --train_dir $train_dir \
     --batch_size 100 \
     --test_interval 500 \
     --test_iter 100 \
-    --num_residual_units 4 \
-    --k 1 \
+    --num_residual_units 6 \
+    --k 2 \
     --l2_weight 0.0005 \
     --initial_lr 0.1 \
     --lr_step_epoch 80.0 \

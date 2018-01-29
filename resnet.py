@@ -5,20 +5,20 @@ import numpy as np
 
 import utils
 
-
 HParams = namedtuple('HParams',
-                    'batch_size, num_classes, num_residual_units, k, '
-                    'weight_decay, initial_lr, decay_step, lr_decay, '
-                    'momentum')
+                     'batch_size, num_classes, num_residual_units, k, '
+                     'weight_decay, initial_lr, decay_step, lr_decay, '
+                     'momentum')
 
 
 class ResNet(object):
-    def __init__(self, hp, images, labels, global_step):
-        self._hp = hp # Hyperparameters
-        self._images = images # Input image
+    def __init__(self, hp, images, labels, global_step, hyper=True):
+        self._hp = hp  # Hyperparameters
+        self._images = images  # Input image
         self._labels = labels
         self._global_step = global_step
         self.is_train = tf.placeholder(tf.bool)
+        self.hyper = hyper
 
     def build_model(self):
         print('Building model')
@@ -26,6 +26,10 @@ class ResNet(object):
         print('\tBuilding unit: init_conv')
         x = utils._conv(self._images, 3, 16, 1, name='init_conv')
 
+        if self.hyper:
+            hypercell = utils.Hyper(3, 16 * self._hp.k, 16 * self._hp.k, 64, 'hypercell')
+        else:
+            hypercell = None
         # Residual Blocks
         filters = [16, 16 * self._hp.k, 32 * self._hp.k, 64 * self._hp.k]
         strides = [1, 2, 2]
@@ -38,17 +42,17 @@ class ResNet(object):
                 x = utils._relu(x, name='relu_1')
 
                 # Shortcut
-                if filters[i-1] == filters[i]:
-                    if strides[i-1] == 1:
+                if filters[i - 1] == filters[i]:
+                    if strides[i - 1] == 1:
                         shortcut = tf.identity(x)
                     else:
-                        shortcut = tf.nn.max_pool(x, [1, strides[i-1], strides[i-1], 1],
-                                                  [1, strides[i-1], strides[i-1], 1], 'VALID')
+                        shortcut = tf.nn.max_pool(x, [1, strides[i - 1], strides[i - 1], 1],
+                                                  [1, strides[i - 1], strides[i - 1], 1], 'VALID')
                 else:
-                    shortcut = utils._conv(x, 1, filters[i], strides[i-1], name='shortcut')
+                    shortcut = utils._conv(x, 1, filters[i], strides[i - 1], name='shortcut')
 
                 # Residual
-                x = utils._conv(x, 3, filters[i], strides[i-1], name='conv_1')
+                x = utils._conv(x, 3, filters[i], strides[i - 1], name='conv_1')
                 x = utils._bn(x, self.is_train, self._global_step, name='bn_2')
                 x = utils._relu(x, name='relu_2')
                 x = utils._conv(x, 3, filters[i], 1, name='conv_2')
@@ -65,10 +69,10 @@ class ResNet(object):
                     # Residual
                     x = utils._bn(x, self.is_train, self._global_step, name='bn_1')
                     x = utils._relu(x, name='relu_1')
-                    x = utils._conv(x, 3, filters[i], 1, name='conv_1')
+                    x = utils._conv(x, 3, filters[i], 1, name='conv_1', hyper=hypercell)
                     x = utils._bn(x, self.is_train, self._global_step, name='bn_2')
                     x = utils._relu(x, name='relu_2')
-                    x = utils._conv(x, 3, filters[i], 1, name='conv_2')
+                    x = utils._conv(x, 3, filters[i], 1, name='conv_2', hyper=hypercell)
 
                     # Merge
                     x = x + shortcut
@@ -94,29 +98,31 @@ class ResNet(object):
         self.preds = tf.to_int32(tf.argmax(self._logits, 1, name='preds'))
         ones = tf.constant(np.ones([self._hp.batch_size]), dtype=tf.float32)
         zeros = tf.constant(np.zeros([self._hp.batch_size]), dtype=tf.float32)
-        correct = tf.select(tf.equal(self.preds, self._labels), ones, zeros)
+        # correct = tf.select(tf.equal(self.preds, self._labels), ones, zeros)
+        correct = tf.where(tf.equal(self.preds, self._labels), ones, zeros)
         self.acc = tf.reduce_mean(correct, name='acc')
-        tf.scalar_summary('accuracy', self.acc)
+        # tf.scalar_summary('accuracy', self.acc)
+        tf.summary.scalar('accuracy', self.acc)
 
         # Loss & acc
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(x, self._labels)
+        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=x, labels=self._labels)
         self.loss = tf.reduce_mean(loss, name='cross_entropy')
-        tf.scalar_summary('cross_entropy', self.loss)
-
+        # tf.scalar_summary('cross_entropy', self.loss)
+        tf.summary.scalar('cross_entropy', self.loss)
 
     def build_train_op(self):
         # Add l2 loss
         with tf.variable_scope('l2_loss'):
             costs = [tf.nn.l2_loss(var) for var in tf.get_collection(utils.WEIGHT_DECAY_KEY)]
             # for var in tf.get_collection(utils.WEIGHT_DECAY_KEY):
-                # tf.histogram_summary(var.op.name, var)
-            l2_loss = tf.mul(self._hp.weight_decay, tf.add_n(costs))
+            # tf.histogram_summary(var.op.name, var)
+            l2_loss = tf.multiply(self._hp.weight_decay, tf.add_n(costs))
         self._total_loss = self.loss + l2_loss
 
         # Learning rate
         self.lr = tf.train.exponential_decay(self._hp.initial_lr, self._global_step,
-                                        self._hp.decay_step, self._hp.lr_decay, staircase=True)
-        tf.scalar_summary('learing_rate', self.lr)
+                                             self._hp.decay_step, self._hp.lr_decay, staircase=True)
+        tf.summary.scalar('learing_rate', self.lr)
 
         # Gradient descent step
         opt = tf.train.MomentumOptimizer(self.lr, self._hp.momentum)
@@ -127,7 +133,7 @@ class ResNet(object):
         # Batch normalization moving average update
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         if update_ops:
-            with tf.control_dependencies(update_ops+[apply_grad_op]):
+            with tf.control_dependencies(update_ops + [apply_grad_op]):
                 self.train_op = tf.no_op()
         else:
             self.train_op = apply_grad_op
