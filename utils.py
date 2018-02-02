@@ -30,6 +30,9 @@ def _conv(x, filter_size, out_channel, strides, pad='SAME', name='conv', hyper=N
         if kernel not in tf.get_collection(WEIGHT_DECAY_KEY):
             tf.add_to_collection(WEIGHT_DECAY_KEY, kernel)
             # print('\tadded to WEIGHT_DECAY_KEY: %s(%s)' % (kernel.name, str(kernel.get_shape().as_list())))
+        u, s = tf.nn.moments(tf.layers.flatten(kernel), axes=0)
+        tf.summary.scalar(kernel.name + '/mean', u[0])
+        tf.summary.scalar(kernel.name + '/std', s[0])
         conv = tf.nn.conv2d(x, kernel, [1, strides, strides, 1], pad)
     return conv
 
@@ -174,7 +177,6 @@ class Hyper(object):
             'out_size': self.out_size,
             'z_dim': self.z_dim,
             'name': self.name,
-            "dtype": self.dtype.name
         }
 
     def conv2d(self, inputs, filters, kernel_size, stride=1, padding='VALID', use_bias=True, scope=None,
@@ -183,8 +185,7 @@ class Hyper(object):
             raise Exception('kernel_size must be the same with f_size')
         dim_in = inputs.get_shape().as_list()[-1]
         # create conv weight
-        conv_weight = self._create_conv_weight([self.f_size, self.f_size, dim_in, filters], dtype=tf.float32,
-                                               scope=scope)
+        conv_weight = self._create_conv_weight([self.f_size, self.f_size, dim_in, filters], scope=scope)
         strides = [1, stride, stride, 1]
         outputs = tf.nn.conv2d(inputs, conv_weight, strides=strides, padding=padding)
         if use_bias:
