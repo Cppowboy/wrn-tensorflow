@@ -30,15 +30,19 @@ def _conv(x, filter_size, out_channel, strides, pad='SAME', name='conv', hyper=N
         if kernel not in tf.get_collection(WEIGHT_DECAY_KEY):
             tf.add_to_collection(WEIGHT_DECAY_KEY, kernel)
             # print('\tadded to WEIGHT_DECAY_KEY: %s(%s)' % (kernel.name, str(kernel.get_shape().as_list())))
-        # show kernel mean and std
+        # show kernel mean, std, max, min, median
         u, s = tf.nn.moments(tf.layers.flatten(kernel), axes=0)
-        tf.summary.scalar(kernel.name + '/mean', u[0])
-        tf.summary.scalar(kernel.name + '/std', s[0])
+        tf.summary.scalar(tf.get_variable_scope().name + 'kernel/mean', u[0])
+        tf.summary.scalar(tf.get_variable_scope().name + 'kernel/std', s[0])
+        tf.summary.scalar(tf.get_variable_scope().name + 'kernel/max', tf.reduce_max(kernel))
+        tf.summary.scalar(tf.get_variable_scope().name + 'kernel/min', tf.reduce_min(kernel))
+        tf.summary.scalar(tf.get_variable_scope().name + 'kernel/median',
+                          tf.contrib.distributions.percentile(kernel, 50.0))
         # show kernel as image
         transposed_kernel = tf.transpose(kernel, [2, 0, 1, 3])
         a, b, c, d = transposed_kernel.get_shape().as_list()
         reshaped_kernel = tf.reshape(transposed_kernel, [1, a * b, c * d, 1])
-        tf.summary.image(kernel.name, reshaped_kernel)
+        tf.summary.image(tf.get_variable_scope().name + 'kernel', reshaped_kernel)
         conv = tf.nn.conv2d(x, kernel, [1, strides, strides, 1], pad)
     return conv
 
