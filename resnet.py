@@ -27,7 +27,7 @@ class ResNet(object):
         x = utils._conv(self._images, 3, 16, 1, name='init_conv')
 
         if self.hyper:
-            hypercell = utils.Hyper(3, 16 * self._hp.k, 16 * self._hp.k, 64, 'hypercell')
+            hypercell = utils.Hyper(3, 16, 16, 64, 'hypercell')
         else:
             hypercell = None
         # Residual Blocks
