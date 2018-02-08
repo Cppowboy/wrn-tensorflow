@@ -140,6 +140,14 @@ class Hyper(object):
                                       dtype=tf.float32, initializer=self.kernel_initializer)
             self.b2 = tf.get_variable('b2', shape=[self.f_size * self.out_size * self.f_size],
                                       dtype=tf.float32, initializer=self.bias_initializer)
+            if self.w1 not in tf.get_collection(WEIGHT_DECAY_KEY):
+                tf.add_to_collection(WEIGHT_DECAY_KEY, self.w1)
+            if self.w2 not in tf.get_collection(WEIGHT_DECAY_KEY):
+                tf.add_to_collection(WEIGHT_DECAY_KEY, self.w2)
+            if self.b1 not in tf.get_collection(WEIGHT_DECAY_KEY):
+                tf.add_to_collection(WEIGHT_DECAY_KEY, self.b1)
+            if self.b2 not in tf.get_collection(WEIGHT_DECAY_KEY):
+                tf.add_to_collection(WEIGHT_DECAY_KEY, self.b2)
 
     def _create_conv_weight(self, shape, scope=None):
         k1_size, k2_size, dim_in, dim_out = shape
