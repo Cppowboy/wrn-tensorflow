@@ -61,3 +61,5 @@ cifar-100-binary*
 
 # Trained checkpoints
 wrn*
+cifar-100-binary
+cifar-10-batches-bin

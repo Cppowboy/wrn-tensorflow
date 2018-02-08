@@ -52,10 +52,10 @@ class ResNet(object):
                     shortcut = utils._conv(x, 1, filters[i], strides[i - 1], name='shortcut')
 
                 # Residual
-                x = utils._conv(x, 3, filters[i], strides[i - 1], name='conv_1')
+                x = utils._conv(x, 3, filters[i], strides[i - 1], name='conv_1', hyper=hypercell)
                 x = utils._bn(x, self.is_train, self._global_step, name='bn_2')
                 x = utils._relu(x, name='relu_2')
-                x = utils._conv(x, 3, filters[i], 1, name='conv_2')
+                x = utils._conv(x, 3, filters[i], 1, name='conv_2', hyper=hypercell)
 
                 # Merge
                 x = x + shortcut
