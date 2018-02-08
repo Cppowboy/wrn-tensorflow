@@ -7,13 +7,18 @@ import time
 import tensorflow as tf
 import numpy as np
 
-import cifar100_input as data_input
+# import cifar100_input as data_input
+import cifar10_input as data_input
 import resnet
 import utils
 
 # Dataset Configuration
-tf.app.flags.DEFINE_string('data_dir', './cifar-100-binary', """Path to the CIFAR-100 binary data.""")
-tf.app.flags.DEFINE_integer('num_classes', 100, """Number of classes in the dataset.""")
+# tf.app.flags.DEFINE_string('data_dir', './cifar-100-binary', """Path to the CIFAR-100 binary data.""")
+# tf.app.flags.DEFINE_integer('num_classes', 100, """Number of classes in the dataset.""")
+# tf.app.flags.DEFINE_integer('num_train_instance', 50000, """Number of training images.""")
+# tf.app.flags.DEFINE_integer('num_test_instance', 10000, """Number of test images.""")
+tf.app.flags.DEFINE_string('data_dir', './cifar-10-batches-bin', """Path to the CIFAR-10 binary data.""")
+tf.app.flags.DEFINE_integer('num_classes', 10, """Number of classes in the dataset.""")
 tf.app.flags.DEFINE_integer('num_train_instance', 50000, """Number of training images.""")
 tf.app.flags.DEFINE_integer('num_test_instance', 10000, """Number of test images.""")
 
@@ -107,6 +112,9 @@ def train():
         network = resnet.ResNet(hp, images, labels, global_step)
         network.build_model()
         network.build_train_op()
+
+        for var in tf.trainable_variables():
+            tf.summary.histogram(var.op.name, var)
 
         # Summaries(training)
         train_summary_op = tf.summary.merge_all()
