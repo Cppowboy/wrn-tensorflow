@@ -132,10 +132,10 @@ class Hyper(object):
         with tf.variable_scope(self.name):
             # create embedding
             # load hypyer params
-            self.w1 = tf.get_variable('w1', shape=[self.z_dim, self.in_size * self.z_dim],
-                                      dtype=tf.float32, initializer=self.kernel_initializer)
-            self.b1 = tf.get_variable('b1', shape=[self.in_size * self.z_dim],
-                                      dtype=tf.float32, initializer=self.bias_initializer)
+            # self.w1 = tf.get_variable('w1', shape=[self.z_dim, self.in_size * self.z_dim],
+            #                           dtype=tf.float32, initializer=self.kernel_initializer)
+            # self.b1 = tf.get_variable('b1', shape=[self.in_size * self.z_dim],
+            #                           dtype=tf.float32, initializer=self.bias_initializer)
             self.w2 = tf.get_variable('w2', shape=[self.z_dim, self.f_size * self.out_size * self.f_size],
                                       dtype=tf.float32, initializer=self.kernel_initializer)
             self.b2 = tf.get_variable('b2', shape=[self.f_size * self.out_size * self.f_size],
@@ -156,6 +156,10 @@ class Hyper(object):
         emb = tf.get_variable(name=scope + 'embedding',
                               shape=[dim_in // self.in_size, dim_out // self.out_size, self.z_dim],
                               initializer=tf.truncated_normal_initializer(stddev=0.01))
+        w1 = tf.get_variable(name=scope + 'w1', shape=[self.z_dim, self.in_size * self.z_dim],
+                             dtype=tf.float32, initializer=self.kernel_initializer)
+        b1 = tf.get_variable(name=scope + 'b1', shape=[self.in_size * self.z_dim],
+                             dtype=tf.float32, initializer=self.bias_initializer)
 
         in_list = []
         for i in range(dim_in // self.in_size):
@@ -163,7 +167,7 @@ class Hyper(object):
             for j in range(dim_out // self.out_size):
                 # row = tf.nn.embedding_lookup(emb, i)
                 # z = tf.nn.embedding_lookup(row, j)
-                w1, b1, w2, b2 = self.w1, self.b1, self.w2, self.b2
+                w2, b2 = self.w2, self.b2
                 # z = tf.reshape(z, [-1, self.z_dim])
                 z = tf.reshape(emb[i, j, :], [-1, self.z_dim])
                 # create conv weight
