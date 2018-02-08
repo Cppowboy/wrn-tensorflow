@@ -161,9 +161,9 @@ class Hyper(object):
         # emb = tf.Variable(
         #    tf.random_normal([dim_in // self.in_size, dim_out // self.out_size, self.z_dim], dtype=dtype, stddev=0.01),
         #    name='emb')
-        emb = tf.get_variable(name=scope + 'embedding',
-                              shape=[dim_in // self.in_size, dim_out // self.out_size, self.z_dim],
-                              initializer=tf.truncated_normal_initializer(stddev=0.01))
+        # emb = tf.get_variable(name=scope + 'embedding',
+        #                       shape=[dim_in // self.in_size, dim_out // self.out_size, self.z_dim],
+        #                       initializer=tf.truncated_normal_initializer(stddev=0.01))
 
         in_list = []
         for i in range(dim_in // self.in_size):
@@ -173,7 +173,10 @@ class Hyper(object):
                 # z = tf.nn.embedding_lookup(row, j)
                 w1, b1, w2, b2 = self.w1, self.b1, self.w2, self.b2
                 # z = tf.reshape(z, [-1, self.z_dim])
-                z = tf.reshape(emb[i, j, :], [-1, self.z_dim])
+                # z = tf.reshape(emb[i, j, :], [-1, self.z_dim])
+                z = tf.Variable(np.random.normal(0.0, 0.01, [1, self.z_dim]), name='embedding', dtype=tf.float32)
+                if z not in tf.get_collection(WEIGHT_DECAY_KEY):
+                    tf.add_to_collection(WEIGHT_DECAY_KEY, z)
                 # create conv weight
                 a = tf.matmul(z, w1) + b1
                 a = tf.reshape(a, [self.in_size, self.z_dim])
